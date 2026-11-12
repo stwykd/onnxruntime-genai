@@ -813,7 +813,43 @@ PYBIND11_MODULE(onnxruntime_genai, m) {
         }
 
         return OgaImages::Load(image_raw_data.data(), image_sizes.data(), image_raw_data.size());
-      });
+      })
+      .def_static("from_pixels", [](pybind11::args arrays, const std::string& format, const std::string& alpha_mode) {
+        OgaPixelFormat pixel_format;
+        if (format == "RGB8") pixel_format = OgaPixelFormatRGB8;
+        else if (format == "RGBA8") pixel_format = OgaPixelFormatRGBA8;
+        else if (format == "BGRA8") pixel_format = OgaPixelFormatBGRA8;
+        else throw std::invalid_argument("format must be RGB8, RGBA8 or BGRA8.");
+        OgaAlphaMode alpha;
+        if (alpha_mode == "opaque") alpha = OgaAlphaOpaque;
+        else if (alpha_mode == "straight") alpha = OgaAlphaStraight;
+        else if (alpha_mode == "premultiplied") alpha = OgaAlphaPremultiplied;
+        else throw std::invalid_argument("alpha_mode must be opaque, straight or premultiplied.");
+        const pybind11::ssize_t channels = pixel_format == OgaPixelFormatRGB8 ? 3 : 4;
+        std::vector<OgaRawImage> images;
+        images.reserve(arrays.size());
+        for (auto object : arrays) {
+          if (!pybind11::isinstance<pybind11::array>(object))
+            throw std::invalid_argument("Pixels must be uint8 NumPy arrays.");
+          const auto array = pybind11::cast<pybind11::array>(object);
+          if (!array.dtype().is(pybind11::dtype::of<uint8_t>()) || array.ndim() != 3 ||
+              array.shape(0) <= 0 || array.shape(0) > 16384 ||
+              array.shape(1) <= 0 || array.shape(1) > 16384 || array.shape(2) != channels ||
+              array.strides(2) != 1 || array.strides(1) != channels ||
+              array.strides(0) < array.shape(1) * channels)
+            throw std::invalid_argument("Pixels must have shape (height, width, channels), packed channels and positive row stride.");
+          const size_t height = static_cast<size_t>(array.shape(0));
+          const size_t width = static_cast<size_t>(array.shape(1));
+          const size_t stride = static_cast<size_t>(array.strides(0));
+          const size_t row_bytes = width * static_cast<size_t>(channels);
+          if (height > 1 && stride > (std::numeric_limits<size_t>::max() - row_bytes) / (height - 1))
+            throw std::invalid_argument("Pixel buffer size overflows size_t.");
+          images.push_back({array.data(), (height - 1) * stride + row_bytes, static_cast<uint32_t>(width),
+                            static_cast<uint32_t>(height), stride, pixel_format, alpha});
+        }
+        return OgaImages::LoadFromRawPixels(images.data(), images.size());
+      }, pybind11::arg("format") = "RGB8", pybind11::arg("alpha_mode") = "straight",
+         "Copy top-down uint8 HWC arrays; positive row padding is allowed. Alpha is discarded, or explicitly unpremultiplied.");
 
   pybind11::class_<OgaAudios>(m, "Audios")
       .def_static("open", [](pybind11::args audio_paths) {

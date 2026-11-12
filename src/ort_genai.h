@@ -897,6 +897,12 @@ struct OgaImages : OgaAbstract {
     return std::unique_ptr<OgaImages>(p);
   }
 
+  static std::unique_ptr<OgaImages> LoadFromRawPixels(const OgaRawImage* image_data, size_t count) {
+    OgaImages* p{};
+    OgaCheckResult(OgaLoadImagesFromRawPixels(image_data, count, &p));
+    return std::unique_ptr<OgaImages>(p);
+  }
+
   static void operator delete(void* p) { OgaDestroyImages(reinterpret_cast<OgaImages*>(p)); }
 };
 

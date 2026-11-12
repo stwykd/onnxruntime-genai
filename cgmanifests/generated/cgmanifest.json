@@ -46,8 +46,8 @@
       "component": {
         "type": "git",
         "git": {
-          "commitHash": "ff54fe1746ae8ce29f5f1ff3fe94cce9d452d88e",
-          "repositoryUrl": "https://github.com/microsoft/onnxruntime-extensions.git"
+          "commitHash": "b06dc9c08627961492448d3309644191650de67b",
+          "repositoryUrl": "https://github.com/stwykd/onnxruntime-extensions.git"
         },
         "comments": "onnxruntime_extensions"
       }

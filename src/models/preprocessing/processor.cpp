@@ -139,6 +139,16 @@ std::unique_ptr<Images> LoadImagesFromBuffers(std::span<const void*> image_data,
   return std::make_unique<Images>(std::move(images), image_data.size(), std::move(info));
 }
 
+std::unique_ptr<Images> LoadImagesFromRawPixels(std::span<const OrtxRawImage> image_data) {
+  ort_extensions::OrtxObjectPtr<OrtxRawImages> images;
+  CheckResult(OrtxCreateImagesFromRawPixels(images.ToBeAssigned(), image_data.data(), image_data.size()));
+  std::vector<Images::Info> info;
+  info.reserve(image_data.size());
+  for (const auto& image : image_data)
+    info.push_back({0, image.width, image.height});
+  return std::make_unique<Images>(std::move(images), image_data.size(), std::move(info));
+}
+
 std::unique_ptr<Audios> LoadAudios(const std::span<const char* const>& audio_paths) {
   for (const char* audio_path : audio_paths) {
     if (!fs::path(audio_path).exists()) {

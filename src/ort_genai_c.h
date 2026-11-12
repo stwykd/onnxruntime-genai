@@ -316,6 +316,49 @@ OGA_EXPORT OgaResult* OGA_API_CALL OgaLoadImages(const OgaStringArray* image_pat
  */
 OGA_EXPORT OgaResult* OGA_API_CALL OgaLoadImagesFromBuffers(const void** image_data, const size_t* image_data_sizes, size_t count, OgaImages** images);
 
+typedef enum {
+  OgaPixelFormatRGB8 = 0,
+  OgaPixelFormatRGBA8 = 1,
+  OgaPixelFormatBGRA8 = 2,
+} OgaPixelFormat;
+
+typedef enum {
+  OgaAlphaOpaque = 0,
+  OgaAlphaStraight = 1,
+  OgaAlphaPremultiplied = 2,
+} OgaAlphaMode;
+
+typedef struct {
+  const void* data;
+  size_t data_size;
+  uint32_t width;
+  uint32_t height;
+  size_t row_stride;
+  OgaPixelFormat format;
+  OgaAlphaMode alpha_mode;
+} OgaRawImage;
+
+/**
+ * \brief Copy decoded uint8 pixels into an owned image batch, without PNG/JPEG encoding.
+ *
+ * Pixels are top-down and interleaved in the specified byte order. row_stride
+ * includes row padding; data_size must cover (height - 1) * row_stride plus the
+ * last row's pixels. Dimensions must be nonzero, at most 16384 each, and at most
+ * 100 million pixels per image. The batch is limited to 512 MiB of owned RGB.
+ *
+ * Opaque/straight alpha is discarded, not composited. Premultiplied RGBA/BGRA
+ * uses min(255, (channel * 255 + alpha / 2) / alpha), with black at zero alpha.
+ * RGB8 cannot be premultiplied. No color management or orientation is applied.
+ * The caller may release its buffers on return. A leading DecodeImage in the
+ * processor configuration is bypassed; its color_space and later transforms
+ * are unchanged. Existing encoded-image loading is unaffected.
+ *
+ * \param[in] image_data Array of count image descriptors.
+ * \param[in] count Number of images; must be nonzero.
+ * \param[out] images Owned image batch, or nullptr on failure.
+ */
+OGA_EXPORT OgaResult* OGA_API_CALL OgaLoadImagesFromRawPixels(const OgaRawImage* image_data, size_t count, OgaImages** images);
+
 OGA_EXPORT void OGA_API_CALL OgaDestroyImages(OgaImages* images);
 
 OGA_EXPORT OgaResult* OGA_API_CALL OgaLoadAudio(const char* audio_path, OgaAudios** audios);

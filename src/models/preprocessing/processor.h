@@ -40,6 +40,7 @@ struct Images {
 
 std::unique_ptr<Images> LoadImages(std::span<const char* const> image_paths);
 std::unique_ptr<Images> LoadImagesFromBuffers(std::span<const void*> image_data, std::span<const size_t> image_data_sizes);
+std::unique_ptr<Images> LoadImagesFromRawPixels(std::span<const OrtxRawImage> image_data);
 
 struct Audios {
   Audios(ort_extensions::OrtxObjectPtr<OrtxRawAudios> audios, size_t num_audios)

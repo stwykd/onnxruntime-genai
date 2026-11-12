@@ -87,6 +87,16 @@ TEST(MediaInputsTest, RetainsPngAndJpegDimensionsWithoutPreprocessing) {
   }
 }
 
+TEST(MediaInputsTest, RawPixelsRetainDimensionsForEngineAdmission) {
+  const std::array<uint8_t, 18> pixels{};
+  const OrtxRawImage descriptor{pixels.data(), pixels.size(), 3, 2, 9, kOrtxPixelFormatRGB8, kOrtxAlphaOpaque};
+  auto images = LoadImagesFromRawPixels({&descriptor, 1});
+  ASSERT_EQ(images->info_.size(), 1u);
+  EXPECT_EQ(images->info_[0].width, 3u);
+  EXPECT_EQ(images->info_[0].height, 2u);
+  EXPECT_EQ(images->info_[0].encoded_bytes, 0u);
+}
+
 TEST(MediaInputsTest, LingImageExpansionRetokenizesOrderedImagesAndWhitespace) {
   auto config = CreateConfig(GetOrtEnv(), MODEL_PATH "qwen3-5");
   const LingImageProcessor processor{*config, {}};

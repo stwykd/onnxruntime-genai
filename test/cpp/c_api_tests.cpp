@@ -99,6 +99,27 @@ TEST(CAPITests, Config) {
 #endif
 }
 
+TEST(CAPITests, RawPixelsValidationAndOwnership) {
+  std::array<uint8_t, 4> pixel{1, 2, 3, 128};
+  OgaRawImage descriptor{pixel.data(), pixel.size(), 1, 1, 4, OgaPixelFormatBGRA8, OgaAlphaPremultiplied};
+  auto images = OgaImages::LoadFromRawPixels(&descriptor, 1);
+  ASSERT_NE(images.get(), nullptr);
+  OgaImages* output{};
+  for (auto call : {
+           OgaLoadImagesFromRawPixels(nullptr, 1, &output),
+           OgaLoadImagesFromRawPixels(&descriptor, 0, &output),
+           OgaLoadImagesFromRawPixels(&descriptor, 1, nullptr)}) {
+    ASSERT_NE(call, nullptr);
+    OgaDestroyResult(call);
+  }
+  EXPECT_EQ(output, nullptr);
+  descriptor.data_size = 3;
+  EXPECT_THROW(OgaImages::LoadFromRawPixels(&descriptor, 1), std::runtime_error);
+  descriptor.data_size = 4;
+  descriptor.format = static_cast<OgaPixelFormat>(99);
+  EXPECT_THROW(OgaImages::LoadFromRawPixels(&descriptor, 1), std::runtime_error);
+}
+
 // Regression test: appending CPU provider should not throw.
 // See https://github.com/microsoft/onnxruntime-genai/pull/2179
 TEST(CAPITests, AppendCpuProvider) {

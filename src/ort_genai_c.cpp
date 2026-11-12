@@ -323,6 +323,23 @@ OgaResult* OGA_API_CALL OgaLoadImagesFromBuffers(const void** image_data, const 
   OGA_CATCH
 }
 
+OgaResult* OGA_API_CALL OgaLoadImagesFromRawPixels(const OgaRawImage* image_data, size_t count, OgaImages** images) {
+  OGA_TRY
+  if (images) *images = nullptr;
+  if (!images || !image_data || count == 0 || count > Generators::kMaxEncodedImageBytes / 3)
+    throw std::invalid_argument("Raw pixels require non-null arguments and a nonempty batch of at most 512 MiB.");
+  std::vector<OrtxRawImage> descriptors;
+  descriptors.reserve(count);
+  for (size_t i = 0; i < count; ++i) {
+    const auto& image = image_data[i];
+    descriptors.push_back({image.data, image.data_size, image.width, image.height, image.row_stride,
+                           static_cast<OrtxPixelFormat>(image.format), static_cast<OrtxAlphaMode>(image.alpha_mode)});
+  }
+  *images = ReturnUnique<OgaImages>(Generators::LoadImagesFromRawPixels(descriptors));
+  return nullptr;
+  OGA_CATCH
+}
+
 OgaResult* OGA_API_CALL OgaLoadAudio(const char* audio_path, OgaAudios** audios) {
   OGA_TRY
   const std::vector<const char*> audio_paths_vector{audio_path};
